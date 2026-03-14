@@ -7,4 +7,4 @@ npm run dev
 ## Usuarios de prueba
 - admin@salafinder.com (Admin)
 - juan@uni.com (Estudiante)
-- maria@uni.com (Staff)
+- staff1@salafinder.com (Staff)
