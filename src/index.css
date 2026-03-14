@@ -1,0 +1,200 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+  --font-poppins: Poppins, sans-serif;
+  
+  --color-brand-50: #eff6ff;
+  --color-brand-100: #dbeafe;
+  --color-brand-200: #bfdbfe;
+  --color-brand-300: #93c5fd;
+  --color-brand-400: #60a5fa;
+  --color-brand-500: #3b82f6;
+  --color-brand-600: #2563eb;
+  --color-brand-700: #1d4ed8;
+  --color-brand-800: #1e40af;
+  --color-brand-900: #1e3a8a;
+
+  --color-surface: #ffffff;
+  --color-page: #f8fafc;
+  --color-border: #e5e7eb;
+  --color-text: #111827;
+  --color-muted: #6b7280;
+
+  --color-success-600: #16a34a;
+  --color-danger-600: #dc2626;
+  --color-warning-600: #d97706;
+  --color-info-600: #0284c7;
+
+  --radius-input: 0.75rem;
+  --radius-btn: 0.75rem;
+  --radius-card: 1rem;
+
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.06), 0 8px 20px rgb(0 0 0 / 0.05);
+  --shadow-pop: 0 10px 30px rgb(0 0 0 / 0.1);
+}
+
+:root {
+  font-family: var(--font-poppins);
+  color: var(--color-text);
+  background: var(--color-page);
+}
+
+body {
+  margin: 0;
+  padding: 0;
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-page);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-muted);
+}
+
+/* Focus Visible */
+:focus-visible {
+  outline: 2px solid var(--color-brand-500);
+  outline-offset: 2px;
+}
+
+/* Animations */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+.animate-slide-in {
+  animation: slideIn 0.3s ease-out;
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Utilities */
+.transition-all {
+  transition: all 0.2s ease;
+}
+
+.truncate-lines-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Form Elements */
+input[type="date"],
+input[type="time"],
+input[type="email"],
+input[type="text"],
+textarea,
+select {
+  font-family: var(--font-poppins);
+}
+
+/* Table */
+table {
+  border-collapse: collapse;
+}
+
+th {
+  font-weight: 600;
+  text-align: left;
+  background: var(--color-page);
+}
+
+td {
+  padding: 0.75rem;
+}
+
+/* Dark mode */
+:root.dark {
+  --color-surface: #1f2937;
+  --color-page: #111827;
+  --color-border: #374151;
+  --color-text: #f9fafb;
+  --color-muted: #9ca3af;
+
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.4), 0 8px 20px rgb(0 0 0 / 0.35);
+  --shadow-pop: 0 10px 30px rgb(0 0 0 / 0.6);
+}
+
+* {
+  transition:
+    background-color 0.35s ease,
+    color 0.35s ease,
+    border-color 0.35s ease;
+}
+
+@keyframes panZoom {
+  from {
+    transform: scale(1.2) translateX(-10%);
+  }
+  to {
+    transform: scale(1.4) translateX(0%);
+  }
+}
+
+@keyframes panZoom2 {
+  from {
+    transform: scale(1.2) translateX(-10%);
+  }
+  to {
+    transform: scale(1.4) translateX(0%);
+  }
+}
+
+@keyframes panZoom3 {
+  from {
+    transform: scale(1.5) translateX(-10%) translateY(15%);
+  }
+  to {
+    transform: scale(2) translateX(20%) translateY(15%);
+  }
+}
+@keyframes slide-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-slide-in {
+  animation: slide-in 0.25s ease-out both;
+}
