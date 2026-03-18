@@ -14,31 +14,20 @@ import StateMessage from './components/ui/StateMessage';
 import SpacesPage from './pages/SpacesPage';
 import SpaceDetailPage from './pages/SpaceDetailPage';
 
-export function initTheme() {
-  const stored = localStorage.getItem('theme');
-  if (stored) {
-    document.documentElement.classList.toggle('dark', stored === 'dark');
-  } else {
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    document.documentElement.classList.toggle('dark', prefersDark);
-  }
-}
-
-export function toggleTheme() {
-  const isDark = document.documentElement.classList.toggle('dark');
-  localStorage.setItem('theme', isDark ? 'dark' : 'light');
-}
-
-// 🔒 Componente para proteger rutas
-function PrivateRoute({ children }: { children: React.ReactNode }){
+// 🔒 Rutas protegidas
+function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useContext(AuthContext);
-  return isAuthenticated ? children : <Navigate to="/login" />;
+  return isAuthenticated ? children : <Navigate to="/login" replace />;
 }
 
 // 🔄 Redirección inicial
 function RootRedirect() {
   const { isAuthenticated } = useContext(AuthContext);
-  return isAuthenticated ? <Navigate to="/home" /> : <Navigate to="/login" />;
+  return isAuthenticated ? (
+    <Navigate to="/home" replace />
+  ) : (
+    <Navigate to="/login" replace />
+  );
 }
 
 export default function App() {
@@ -50,47 +39,36 @@ export default function App() {
             <Navbar />
             <Routes>
 
-              {/* 🔥 Redirección al entrar */}
+              {/* 🔥 Entrada principal */}
               <Route path="/" element={<RootRedirect />} />
 
+              {/* Auth */}
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
 
-              {/* 🔒 Rutas protegidas */}
+              {/* 🔒 Protegidas */}
               <Route path="/home" element={
-                <PrivateRoute>
-                  <HomePage />
-                </PrivateRoute>
+                <PrivateRoute><HomePage /></PrivateRoute>
               } />
 
               <Route path="/calendar" element={
-                <PrivateRoute>
-                  <CalendarPage />
-                </PrivateRoute>
+                <PrivateRoute><CalendarPage /></PrivateRoute>
               } />
 
               <Route path="/reservations" element={
-                <PrivateRoute>
-                  <ReservationsPage />
-                </PrivateRoute>
+                <PrivateRoute><ReservationsPage /></PrivateRoute>
               } />
 
               <Route path="/admin" element={
-                <PrivateRoute>
-                  <AdminDashboard />
-                </PrivateRoute>
+                <PrivateRoute><AdminDashboard /></PrivateRoute>
               } />
 
               <Route path="/spaces" element={
-                <PrivateRoute>
-                  <SpacesPage />
-                </PrivateRoute>
+                <PrivateRoute><SpacesPage /></PrivateRoute>
               } />
 
               <Route path="/spaces/:id" element={
-                <PrivateRoute>
-                  <SpaceDetailPage />
-                </PrivateRoute>
+                <PrivateRoute><SpaceDetailPage /></PrivateRoute>
               } />
 
               {/* ❌ 404 */}
