@@ -14,7 +14,6 @@ interface WeekCalendarProps {
 export default function WeekCalendar({ space, reservations, onSlotClick }: WeekCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
 
-  // Obtener lunes de la semana
   const getMonday = (date: Date) => {
     const d = new Date(date);
     const day = d.getDay();
@@ -54,16 +53,25 @@ export default function WeekCalendar({ space, reservations, onSlotClick }: WeekC
   };
 
   const formatDate = (date: Date) => {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
-};
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  };
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const isPastDay = (day: Date) => {
+    const d = new Date(day);
+    d.setHours(0, 0, 0, 0);
+    return d <= today;
+  };
+
   const dayNames = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 
   return (
     <Card className="w-full overflow-x-auto">
-      {/* Header */}
       <div className="mb-4 flex items-center justify-between">
         <h3 className="font-semibold text-text text-surface">{space.name}</h3>
         <div className="flex gap-2">
@@ -86,7 +94,6 @@ export default function WeekCalendar({ space, reservations, onSlotClick }: WeekC
         </div>
       </div>
 
-      {/* Tabla de horarios */}
       <div className="overflow-x-auto">
         <table className="w-full border-collapse text-sm">
           <thead>
@@ -97,7 +104,9 @@ export default function WeekCalendar({ space, reservations, onSlotClick }: WeekC
               {weekDays.map((day, idx) => (
                 <th
                   key={idx}
-                  className="px-2 py-2 text-center text-xs font-semibold text-text"
+                  className={`px-2 py-2 text-center text-xs font-semibold ${
+                    isPastDay(day) ? 'text-muted opacity-50' : 'text-text'
+                  }`}
                 >
                   <div>{dayNames[idx]}</div>
                   <div className="text-muted dark:text-gray-400">{day.toLocaleDateString('es-ES')}</div>
@@ -118,14 +127,17 @@ export default function WeekCalendar({ space, reservations, onSlotClick }: WeekC
                   const dateStr = formatDate(day);
                   const nextHour = String((parseInt(time) + 1) % 24).padStart(2, '0') + ':00';
                   const dayReservations = getReservationsForSlot(dateStr, time, nextHour);
+                  const past = isPastDay(day);
 
                   return (
                     <td
                       key={`${idx}-${time}`}
-                      onClick={() => onSlotClick?.(dateStr, time, nextHour)}
-                      className="px-1 py-1 border-r border-border cursor-pointer
-                                 bg-page bg-gray-800
-                                 hover:bg-brand-50 dark:hover:bg-brand-500 transition-colors h-6"
+                      onClick={() => !past && onSlotClick?.(dateStr, time, nextHour)}
+                      className={`px-1 py-1 border-r border-border h-6 transition-colors
+                        ${past
+                          ? 'bg-gray-100 dark:bg-gray-900 cursor-not-allowed opacity-40'
+                          : 'bg-page cursor-pointer hover:bg-brand-50 dark:hover:bg-brand-500'
+                        }`}
                     >
                       <TimeSlot reservations={dayReservations} />
                     </td>
