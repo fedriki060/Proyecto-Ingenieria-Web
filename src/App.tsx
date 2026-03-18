@@ -1,5 +1,6 @@
-import { Routes, Route } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { useContext } from 'react';
+import { AuthProvider, AuthContext } from './context/AuthContext';
 import { AppStoreProvider } from './context/AppStoreContext';
 import { ToastProvider } from './context/ToastContext';
 import Navbar from './components/layout/Navbar';
@@ -12,7 +13,6 @@ import AdminDashboard from './pages/AdminDashboard';
 import StateMessage from './components/ui/StateMessage';
 import SpacesPage from './pages/SpacesPage';
 import SpaceDetailPage from './pages/SpaceDetailPage';
-
 
 export function initTheme() {
   const stored = localStorage.getItem('theme');
@@ -29,6 +29,18 @@ export function toggleTheme() {
   localStorage.setItem('theme', isDark ? 'dark' : 'light');
 }
 
+// 🔒 Componente para proteger rutas
+function PrivateRoute({ children }: { children: React.ReactNode }){
+  const { isAuthenticated } = useContext(AuthContext);
+  return isAuthenticated ? children : <Navigate to="/login" />;
+}
+
+// 🔄 Redirección inicial
+function RootRedirect() {
+  const { isAuthenticated } = useContext(AuthContext);
+  return isAuthenticated ? <Navigate to="/home" /> : <Navigate to="/login" />;
+}
+
 export default function App() {
   return (
     <AuthProvider>
@@ -37,14 +49,51 @@ export default function App() {
           <div className="min-h-screen bg-page">
             <Navbar />
             <Routes>
+
+              {/* 🔥 Redirección al entrar */}
+              <Route path="/" element={<RootRedirect />} />
+
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
-              <Route path="/" element={<HomePage />} />
-              <Route path="/calendar" element={<CalendarPage />} />
-              <Route path="/reservations" element={<ReservationsPage />} />
-              <Route path="/admin" element={<AdminDashboard />} />
-              <Route path="/spaces" element={<SpacesPage />} />
-              <Route path="/spaces/:id" element={<SpaceDetailPage />} />
+
+              {/* 🔒 Rutas protegidas */}
+              <Route path="/home" element={
+                <PrivateRoute>
+                  <HomePage />
+                </PrivateRoute>
+              } />
+
+              <Route path="/calendar" element={
+                <PrivateRoute>
+                  <CalendarPage />
+                </PrivateRoute>
+              } />
+
+              <Route path="/reservations" element={
+                <PrivateRoute>
+                  <ReservationsPage />
+                </PrivateRoute>
+              } />
+
+              <Route path="/admin" element={
+                <PrivateRoute>
+                  <AdminDashboard />
+                </PrivateRoute>
+              } />
+
+              <Route path="/spaces" element={
+                <PrivateRoute>
+                  <SpacesPage />
+                </PrivateRoute>
+              } />
+
+              <Route path="/spaces/:id" element={
+                <PrivateRoute>
+                  <SpaceDetailPage />
+                </PrivateRoute>
+              } />
+
+              {/* ❌ 404 */}
               <Route
                 path="*"
                 element={
