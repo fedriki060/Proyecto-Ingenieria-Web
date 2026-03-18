@@ -1,4 +1,3 @@
-import React from 'react';
 import Button from './Button';
 
 type StateType = 'loading' | 'error' | 'empty' | 'success';

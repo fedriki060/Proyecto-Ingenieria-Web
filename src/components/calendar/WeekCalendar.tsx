@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import type { Reservation, Space } from '../../types';
 import { FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 import Button from '../ui/Button';

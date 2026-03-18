@@ -30,7 +30,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const login = (email: string, password: string) => {
+  const login = (email: string, _password: string) => {
     const user = seedUsers.find((u) => u.email === email);
     if (user) {
       setCurrentUser(user);

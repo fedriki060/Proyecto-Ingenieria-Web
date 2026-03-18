@@ -22,7 +22,7 @@ export default function CalendarPage() {
   } | null>(null);
 
   const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [_showSuccessModal, _setShowSuccessModal] = useState(false);
 
   const space = spaces.find((s) => s.id === spaceId);
 

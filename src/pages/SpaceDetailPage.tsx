@@ -55,7 +55,7 @@ export default function SpaceDetailPage() {
 
   const spaceReservations = reservations.filter((r) => r.spaceId === space.id);
 
-  const handleReservationSuccess = (reservation: Reservation) => {
+  const handleReservationSuccess = (_reservation: Reservation) => {
     setShowForm(false);
     setSelectedSlot(null);
     setSuccessModal({ open: true, requiresApproval: space.requiresApproval });

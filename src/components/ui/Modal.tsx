@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import Button from './Button';
+import _Button from './Button';
 
 interface ModalProps {
   isOpen: boolean;
@@ -18,10 +18,6 @@ export default function Modal({
   title,
   message,
   type = 'info',
-  onClose,
-  onConfirm,
-  confirmText = 'Confirmar',
-  cancelText = 'Cancelar',
   children,
 }: ModalProps) {
   if (!isOpen) return null;
@@ -58,9 +54,9 @@ export default function Modal({
 
 // Helper para mostrar modales fácilmente
 export const showModal = (
-  title: string,
-  message: string,
-  type: 'success' | 'error' | 'warning' | 'info' = 'info'
+  _title: string,
+  _message: string,
+  _type: 'success' | 'error' | 'warning' | 'info' = 'info'
 ): Promise<boolean> => {
   return new Promise((resolve) => {
     // Implementación en el contexto de la app

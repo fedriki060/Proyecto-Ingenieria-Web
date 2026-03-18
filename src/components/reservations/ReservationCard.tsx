@@ -1,6 +1,6 @@
 import type { Reservation, Space } from '../../types';
 import { ReservationStatus } from '../../types';
-import Button from '../ui/Button';
+import _Button from '../ui/Button';
 import Badge from '../ui/Badge';
 import { FiCalendar, FiClock, FiUsers, FiTrash2 } from 'react-icons/fi';
 

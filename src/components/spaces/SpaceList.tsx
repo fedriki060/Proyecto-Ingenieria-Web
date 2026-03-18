@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import type { Space } from '../../types';
 import { SpaceType } from '../../types';
 import SpaceCard from './SpaceCard';

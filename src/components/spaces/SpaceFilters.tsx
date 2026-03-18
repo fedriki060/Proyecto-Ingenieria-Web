@@ -1,4 +1,3 @@
-import React from 'react';
 import { SpaceType } from '../../types';
 import Button from '../ui/Button';
 import { FiX } from 'react-icons/fi';
