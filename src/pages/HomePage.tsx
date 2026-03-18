@@ -26,7 +26,7 @@ export default function HomePage() {
       label: "Reservar Espacio",
       description: "Accede al calendario para reservar un espacio",
       path: "/spaces",
-      img: "/images/calendario.jpeg",
+      img: "/Proyecto-Ingenieria-Web/images/calendario.jpeg",
       animation: "group-hover:[animation:panZoom_10s_linear_forwards]",
       objectPosition: "center center",
       icon: "📅",
@@ -46,7 +46,7 @@ export default function HomePage() {
             label: "Administración",
             description: "Gestiona espacios y aprobaciones",
             path: "/admin",
-            img: "/images/administrar.jpg",
+            img: "/Proyecto-Ingenieria-Web/images/administrar.jpg",
             animation: "group-hover:[animation:panZoom3_10s_linear_forwards]",
             objectPosition: "45% center",
             icon: "⚙️",
@@ -56,9 +56,9 @@ export default function HomePage() {
   ];
 
   return (
-    <main className="mx-auto max-w-6xl px-6 py-6 min-h-screen flex flex-col justify-start">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-text mb-2">
+    <main className="mx-auto max-w-6xl px-6 py-4 flex flex-col">
+      <div className="mb-4">
+        <h1 className="text-3xl font-bold text-text mb-1">
           🏛️ Bienvenido a SalaFinder
         </h1>
         <p className="text-muted">
@@ -67,7 +67,7 @@ export default function HomePage() {
       </div>
 
       <div
-        className={`grid gap-6 flex-1 ${
+        className={`grid gap-4 ${
           isAdmin
             ? "grid-cols-1 md:grid-cols-3"
             : "grid-cols-1 md:grid-cols-2"
@@ -77,9 +77,10 @@ export default function HomePage() {
           <div
             key={card.path}
             onClick={() => navigate(card.path)}
-            className="relative rounded-card overflow-hidden cursor-pointer h-[720px]
+            className="relative rounded-card overflow-hidden cursor-pointer
                        transform transition-all duration-700 ease-out shadow-card group
                        hover:scale-105 hover:-translate-y-2 hover:shadow-2xl"
+            style={{ height: 'calc(100vh - 180px)' }}
           >
             <img
               src={card.img}
