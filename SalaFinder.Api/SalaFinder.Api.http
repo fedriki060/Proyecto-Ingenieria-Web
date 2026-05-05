@@ -1,0 +1,6 @@
+@SalaFinder.Api_HostAddress = http://localhost:5070
+
+GET {{SalaFinder.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
