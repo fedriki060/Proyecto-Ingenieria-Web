@@ -110,12 +110,7 @@ app.MapControllers();
 // ─── Seed de roles ────────────────────────────────────────────────────────────
 using (var scope = app.Services.CreateScope())
 {
-    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-    foreach (var role in new[] { "Admin", "Estudiante", "Staff" })
-    {
-        if (!await roleManager.RoleExistsAsync(role))
-            await roleManager.CreateAsync(new IdentityRole(role));
-    }
+    await SalaFinder.Api.Infrastructure.Migrations.DatabaseSeeder.SeedAsync(scope.ServiceProvider);
 }
 
 app.Run();
