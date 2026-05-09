@@ -63,21 +63,25 @@ export default function RegisterPage() {
     if (!validate()) return;
 
     setIsSubmitting(true);
-    // Simular registro (fake — en el seed no guardamos el nuevo user en localStorage de forma completa
-    // pero hacemos login inmediato con el admin para demostrar el flujo)
-    await new Promise((r) => setTimeout(r, 700));
-
-    // Para demo: si el email ya existe en seed, registramos con ese email
-    // Si no, notificamos éxito y redirigimos al login
-    const success = login(form.email, form.password);
-    if (success) {
-      showToast(`Bienvenido, ${form.name}!`, 'success');
-      navigate('/');
-    } else {
-      showToast('Registro exitoso. Ahora puedes iniciar sesion.', 'success');
-      navigate('/login');
+    try {
+      const result = await authApi.register(
+        form.email,
+        form.password,
+        form.name,
+        form.role === UserRole.STUDENT ? 'Estudiante' : 'Staff'
+      );
+      if (result.token) {
+        const success = await login(form.email, form.password);
+        if (success) {
+          showToast(`Bienvenido, ${form.name}!`, 'success');
+          navigate('/');
+        }
+      }
+    } catch (error: any) {
+      showToast(error.message || 'Error al registrar usuario', 'error');
+    } finally {
+      setIsSubmitting(false);
     }
-    setIsSubmitting(false);
   };
 
   return (
