@@ -1,13 +1,12 @@
 import { useState } from 'react';
-import type { Reservation, Space } from '../../types';
 import { FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 import Button from '../ui/Button';
 import TimeSlot from './TimeSlot';
 import Card from '../ui/Card';
 
 interface WeekCalendarProps {
-  space: Space;
-  reservations: Reservation[];
+  space: any;
+  reservations: any[];
   onSlotClick?: (date: string, startTime: string, endTime: string) => void;
 }
 
@@ -31,13 +30,22 @@ export default function WeekCalendar({ space, reservations, onSlotClick }: WeekC
   const timeSlots = Array.from({ length: 24 }, (_, i) => `${String(i).padStart(2, '0')}:00`);
 
   const getReservationsForSlot = (date: string, startTime: string, endTime: string) => {
-    return reservations.filter(
-      (res) =>
-        res.spaceId === space.id &&
-        res.date === date &&
-        res.startTime < endTime &&
-        res.endTime > startTime
-    );
+    return reservations.filter((res) => {
+      const resInicio = new Date(res.fechaInicio);
+      const resFin = new Date(res.fechaFin);
+      const resDate = `${resInicio.getFullYear()}-${String(resInicio.getMonth() + 1).padStart(2, '0')}-${String(resInicio.getDate()).padStart(2, '0')}`;
+      const resStartTime = `${String(resInicio.getHours()).padStart(2, '0')}:00`;
+      const resEndTime = `${String(resFin.getHours()).padStart(2, '0')}:00`;
+
+      return (
+        (res.salaId === space.id || res.spaceId === space.id) &&
+        resDate === date &&
+        res.estado !== 'Cancelada' &&
+        res.estado !== 'Rechazada' &&
+        resStartTime < endTime &&
+        resEndTime > startTime
+      );
+    });
   };
 
   const handlePrevWeek = () => {
@@ -73,7 +81,7 @@ export default function WeekCalendar({ space, reservations, onSlotClick }: WeekC
   return (
     <Card className="w-full overflow-x-auto">
       <div className="mb-4 flex items-center justify-between">
-        <h3 className="font-semibold text-text text-surface">{space.name}</h3>
+        <h3 className="font-semibold text-text">{space.nombre || space.name}</h3>
         <div className="flex gap-2">
           <Button
             variant="secondary"
@@ -129,13 +137,17 @@ export default function WeekCalendar({ space, reservations, onSlotClick }: WeekC
                   const dayReservations = getReservationsForSlot(dateStr, time, nextHour);
                   const past = isPastDay(day);
 
+                  const isOccupied = dayReservations.length > 0;
+
                   return (
                     <td
                       key={`${idx}-${time}`}
-                      onClick={() => !past && onSlotClick?.(dateStr, time, nextHour)}
+                      onClick={() => !past && !isOccupied && onSlotClick?.(dateStr, time, nextHour)}
                       className={`px-1 py-1 border-r border-border h-6 transition-colors
                         ${past
                           ? 'bg-gray-100 dark:bg-gray-900 cursor-not-allowed opacity-40'
+                          : isOccupied
+                          ? 'cursor-not-allowed'
                           : 'bg-page cursor-pointer hover:bg-brand-50 dark:hover:bg-brand-500'
                         }`}
                     >

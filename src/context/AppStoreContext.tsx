@@ -6,52 +6,46 @@ import {
   useEffect,
   type ReactNode,
 } from 'react';
-import type {
-  Reservation,
-  Space,
-  User,
-  AuditLog,
-  CreateReservationDTO,
-  ApproveReservationDTO,
-  RejectReservationDTO,
-} from '../types';
-import { ReservationStatus, AuditAction } from '../types';
-import { seedUsers, seedSpaces, seedReservations, seedAuditLogs } from '../data/seed';
+import { salasApi, reservasApi } from '../services/api';
 
-// ─── helpers localStorage ──────────────────────────────────────────
-function load<T>(key: string, fallback: T): T {
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? (JSON.parse(raw) as T) : fallback;
-  } catch {
-    return fallback;
-  }
-}
-function save<T>(key: string, value: T) {
-  localStorage.setItem(key, JSON.stringify(value));
+interface Sala {
+  id: number;
+  nombre: string;
+  descripcion: string;
+  capacidad: number;
+  ubicacion: string;
+  tipo: string;
+  imagenUrl?: string;
+  disponible: boolean;
+  requiereAprobacion: boolean;
 }
 
-// ─── tipos del contexto ────────────────────────────────────────────
+interface Reserva {
+  id: number;
+  usuarioId: string;
+  nombreUsuario: string;
+  salaId: number;
+  nombreSala: string;
+  fechaInicio: string;
+  fechaFin: string;
+  proposito: string;
+  estado: string;
+  comentarioStaff?: string;
+  fechaCreacion: string;
+}
+
 interface AppStoreContextType {
-  reservations: Reservation[];
-  spaces: Space[];
-  users: User[];
-  auditLogs: AuditLog[];
+  salas: Sala[];
+  reservas: Reserva[];
   isLoading: boolean;
-  // Reservas
-  createReservation: (
-    dto: CreateReservationDTO,
-    userId: number,
-    space: Space
-  ) => Promise<Reservation>;
-  approveReservation: (dto: ApproveReservationDTO) => Promise<Reservation>;
-  rejectReservation: (dto: RejectReservationDTO) => Promise<Reservation>;
-  cancelReservation: (reservationId: number, userId: number) => Promise<void>;
-  // Helpers
-  getReservationsByUser: (userId: number) => Reservation[];
-  getPendingReservations: () => Reservation[];
-  // Usuarios
-  updateUser: (userId: number, updates: Partial<User>) => void;
+  cargarSalas: () => Promise<void>;
+  cargarReservas: () => Promise<void>;
+  crearReserva: (salaId: number, fechaInicio: string, fechaFin: string, proposito: string) => Promise<Reserva>;
+  cambiarEstadoReserva: (id: number, estado: string, comentario?: string) => Promise<void>;
+  cancelarReserva: (id: number) => Promise<void>;
+  registrarNoShow: (id: number) => Promise<void>;
+  cargarTodasReservas: () => Promise<void>;
+  todasReservas: Reserva[];
 }
 
 export const AppStoreContext = createContext<AppStoreContextType>({} as AppStoreContextType);
@@ -60,185 +54,119 @@ export function useAppStore() {
   return useContext(AppStoreContext);
 }
 
-// ─── simulación de latencia ────────────────────────────────────────
-function delay(ms = 600) {
-  return new Promise<void>((res) => setTimeout(res, ms));
-}
-
-// ─── proveedor ─────────────────────────────────────────────────────
 export function AppStoreProvider({ children }: { children: ReactNode }) {
-  const [reservations, setReservations] = useState<Reservation[]>(() =>
-    load('sf_reservations', seedReservations)
-  );
-  const [spaces] = useState<Space[]>(() =>
-    load('sf_spaces', seedSpaces)
-  );
-  const [users, setUsers] = useState<User[]>(() =>
-    load('sf_users', seedUsers)
-  );
-  const [auditLogs, setAuditLogs] = useState<AuditLog[]>(() =>
-    load('sf_audit', seedAuditLogs)
-  );
+  const [salas, setSalas] = useState<Sala[]>([]);
+  const [reservas, setReservas] = useState<Reserva[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Persistir en localStorage cuando cambia el estado
-  useEffect(() => { save('sf_reservations', reservations); }, [reservations]);
-  useEffect(() => { save('sf_users', users); }, [users]);
-  useEffect(() => { save('sf_audit', auditLogs); }, [auditLogs]);
+  const [todasReservas, setTodasReservas] = useState<Reserva[]>([]);
 
-  // ── helpers internos ──
-  const addAuditLog = useCallback(
-    (
-      userId: number,
-      action: AuditAction,
-      entityType: 'RESERVATION' | 'SPACE' | 'USER',
-      entityId: number,
-      changes?: Record<string, unknown>
-    ) => {
-      const log: AuditLog = {
-        id: Date.now(),
-        userId,
-        action,
-        entityType,
-        entityId,
-        changes,
-        timestamp: new Date(),
-      };
-      setAuditLogs((prev) => [...prev, log]);
-    },
-    []
-  );
+  const cargarTodasReservas = useCallback(async () => {
+    try {
+        setIsLoading(true);
+        const data = await reservasApi.getAll();
+        setTodasReservas(data);
+    } catch (error) {
+        console.error('Error cargando todas las reservas:', error);
+    } finally {
+        setIsLoading(false);
+    }
+    }, []);
 
-  // ── crear reserva ──
-  const createReservation = useCallback(
-    async (dto: CreateReservationDTO, userId: number, space: Space): Promise<Reservation> => {
+  const cargarSalas = useCallback(async () => {
+    try {
       setIsLoading(true);
-      await delay();
-      const newRes: Reservation = {
-        id: Date.now(),
-        spaceId: dto.spaceId,
-        userId,
-        date: dto.date,
-        startTime: dto.startTime,
-        endTime: dto.endTime,
-        purpose: dto.purpose,
-        attendeeCount: dto.attendeeCount,
-        status: space.requiresApproval
-          ? ReservationStatus.PENDING
-          : ReservationStatus.APPROVED,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-      setReservations((prev) => [...prev, newRes]);
-      addAuditLog(userId, AuditAction.RESERVATION_CREATED, 'RESERVATION', newRes.id, {
-        spaceId: dto.spaceId,
-        date: dto.date,
-      });
+      const data = await salasApi.getAll();
+      setSalas(data);
+    } catch (error) {
+      console.error('Error cargando salas:', error);
+    } finally {
       setIsLoading(false);
-      return newRes;
-    },
-    [addAuditLog]
-  );
-
-  // ── aprobar reserva ──
-  const approveReservation = useCallback(
-    async (dto: ApproveReservationDTO): Promise<Reservation> => {
-      setIsLoading(true);
-      await delay(400);
-      let updated!: Reservation;
-      setReservations((prev) =>
-        prev.map((r) => {
-          if (r.id !== dto.reservationId) return r;
-          updated = { ...r, status: ReservationStatus.APPROVED, approvedBy: dto.approvedBy, updatedAt: new Date() };
-          return updated;
-        })
-      );
-      addAuditLog(dto.approvedBy, AuditAction.RESERVATION_APPROVED, 'RESERVATION', dto.reservationId);
-      setIsLoading(false);
-      return updated;
-    },
-    [addAuditLog]
-  );
-
-  // ── rechazar reserva ──
-  const rejectReservation = useCallback(
-    async (dto: RejectReservationDTO): Promise<Reservation> => {
-      setIsLoading(true);
-      await delay(400);
-      let updated!: Reservation;
-      setReservations((prev) =>
-        prev.map((r) => {
-          if (r.id !== dto.reservationId) return r;
-          updated = {
-            ...r,
-            status: ReservationStatus.REJECTED,
-            rejectionReason: dto.rejectionReason,
-            updatedAt: new Date(),
-          };
-          return updated;
-        })
-      );
-      addAuditLog(dto.rejectedBy, AuditAction.RESERVATION_REJECTED, 'RESERVATION', dto.reservationId, {
-        reason: dto.rejectionReason,
-      });
-      setIsLoading(false);
-      return updated;
-    },
-    [addAuditLog]
-  );
-
-  // ── cancelar reserva ──
-  const cancelReservation = useCallback(
-    async (reservationId: number, userId: number): Promise<void> => {
-      setIsLoading(true);
-      await delay(400);
-      setReservations((prev) =>
-        prev.map((r) =>
-          r.id === reservationId
-            ? { ...r, status: ReservationStatus.CANCELLED, updatedAt: new Date() }
-            : r
-        )
-      );
-      addAuditLog(userId, AuditAction.RESERVATION_CANCELLED, 'RESERVATION', reservationId);
-      setIsLoading(false);
-    },
-    [addAuditLog]
-  );
-
-  // ── helpers de consulta ──
-  const getReservationsByUser = useCallback(
-    (userId: number) => reservations.filter((r) => r.userId === userId),
-    [reservations]
-  );
-
-  const getPendingReservations = useCallback(
-    () => reservations.filter((r) => r.status === ReservationStatus.PENDING),
-    [reservations]
-  );
-
-  const updateUser = useCallback((userId: number, updates: Partial<User>) => {
-    setUsers((prev) =>
-      prev.map((u) => (u.id === userId ? { ...u, ...updates } : u))
-    );
+    }
   }, []);
 
+  const cargarReservas = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const data = await reservasApi.getMias();
+      setReservas(data);
+    } catch (error) {
+      console.error('Error cargando reservas:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const crearReserva = useCallback(async (
+    salaId: number,
+    fechaInicio: string,
+    fechaFin: string,
+    proposito: string
+  ): Promise<Reserva> => {
+    setIsLoading(true);
+    try {
+      const nueva = await reservasApi.create({ salaId, fechaInicio, fechaFin, proposito });
+      setReservas(prev => [...prev, nueva]);
+      return nueva;
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const cambiarEstadoReserva = useCallback(async (
+    id: number,
+    estado: string,
+    comentario?: string
+  ) => {
+    setIsLoading(true);
+    try {
+      const actualizada = await reservasApi.cambiarEstado(id, estado, comentario);
+      setReservas(prev => prev.map((r: Reserva) => r.id === id ? actualizada : r));
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const cancelarReserva = useCallback(async (id: number) => {
+    setIsLoading(true);
+    try {
+      await reservasApi.cancelar(id);
+      await cargarReservas();
+    } finally {
+      setIsLoading(false);
+    }
+  }, [cargarReservas]);
+
+  const registrarNoShow = useCallback(async (id: number) => {
+    setIsLoading(true);
+    try {
+      await reservasApi.registrarNoShow(id);
+      setReservas(prev => prev.map((r: Reserva) =>
+        r.id === id ? { ...r, estado: 'NoShow' } : r
+      ));
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    cargarSalas();
+  }, [cargarSalas]);
+
   return (
-    <AppStoreContext.Provider
-      value={{
-        reservations,
-        spaces,
-        users,
-        auditLogs,
-        isLoading,
-        createReservation,
-        approveReservation,
-        rejectReservation,
-        cancelReservation,
-        getReservationsByUser,
-        getPendingReservations,
-        updateUser,
-      }}
-    >
+    <AppStoreContext.Provider value={{
+      salas,
+      reservas,
+      isLoading,
+      cargarSalas,
+      cargarReservas,
+      crearReserva,
+      cambiarEstadoReserva,
+      cancelarReserva,
+      registrarNoShow,
+      todasReservas,
+      cargarTodasReservas,
+    }}>
       {children}
     </AppStoreContext.Provider>
   );

@@ -65,14 +65,14 @@ export default function RegisterPage() {
     setIsSubmitting(true);
     await new Promise((r) => setTimeout(r, 700));
 
-    const success = login(form.email, form.password);
+  const success = await login(form.email, form.password);
     if (success) {
       navigate('/');
     } else {
       setSubmitError('Este email no esta registrado. Usa uno de los usuarios de prueba.');
     }
     setIsSubmitting(false);
-  };
+  }
 
   return (
     <main className="mx-auto max-w-md px-6 py-10">

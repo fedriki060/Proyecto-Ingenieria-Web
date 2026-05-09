@@ -1,73 +1,65 @@
-import type { Reservation, Space } from '../../types';
-import { ReservationStatus } from '../../types';
-import _Button from '../ui/Button';
 import Badge from '../ui/Badge';
-import { FiCalendar, FiClock, FiUsers, FiTrash2 } from 'react-icons/fi';
+import { FiCalendar, FiClock, FiTrash2, FiMessageSquare } from 'react-icons/fi';
 
 type Props = {
-  reservation: Reservation;
-  space?: Space;
+  reservation: any;
+  space?: any;
   onCancel?: () => void;
 };
 
-const statusColors: Record<ReservationStatus, 'success' | 'danger' | 'warning' | 'info'> = {
-  [ReservationStatus.APPROVED]: 'success',
-  [ReservationStatus.PENDING]: 'warning',
-  [ReservationStatus.REJECTED]: 'danger',
-  [ReservationStatus.CANCELLED]: 'info',
+const statusColors: Record<string, 'success' | 'danger' | 'warning' | 'info'> = {
+  'Aprobada': 'success',
+  'Pendiente': 'warning',
+  'Rechazada': 'danger',
+  'Cancelada': 'info',
+  'NoShow': 'danger',
 };
 
-const statusLabels: Record<ReservationStatus, string> = {
-  [ReservationStatus.APPROVED]: '✅ Aprobada',
-  [ReservationStatus.PENDING]: '⏳ Pendiente',
-  [ReservationStatus.REJECTED]: '❌ Rechazada',
-  [ReservationStatus.CANCELLED]: '🚫 Cancelada',
+const statusLabels: Record<string, string> = {
+  'Aprobada': '✅ Aprobada',
+  'Pendiente': '⏳ Pendiente',
+  'Rechazada': '❌ Rechazada',
+  'Cancelada': '🚫 Cancelada',
+  'NoShow': '🚷 No-Show',
 };
 
 export default function ReservationCard({ reservation, space, onCancel }: Props) {
+  const fechaInicio = new Date(reservation.fechaInicio);
+  const fechaFin = new Date(reservation.fechaFin);
+
   return (
     <div className="rounded-card border border-border bg-surface p-4 shadow-card">
-      {/* Header */}
       <div className="flex items-start justify-between gap-3 mb-3">
         <div>
           <h3 className="text-lg font-semibold text-text m-0">
-            {space?.name || `Espacio ${reservation.spaceId}`}
+            {reservation.nombreSala || space?.nombre || `Espacio ${reservation.salaId}`}
           </h3>
-          <p className="text-sm text-muted m-0 mt-1">{reservation.purpose}</p>
+          <p className="text-sm text-muted m-0 mt-1">{reservation.proposito}</p>
         </div>
-        <Badge variant={statusColors[reservation.status]}>
-          {statusLabels[reservation.status]}
+        <Badge variant={statusColors[reservation.estado] ?? 'info'}>
+          {statusLabels[reservation.estado] ?? reservation.estado}
         </Badge>
       </div>
 
-      {/* Details */}
       <div className="space-y-2 mb-4 text-sm">
-        {/* Fecha */}
         <div className="flex items-center gap-2 text-text">
           <FiCalendar size={16} className="text-muted" />
-          <span>{new Date(reservation.date).toLocaleDateString('es-ES')}</span>
+          <span>{fechaInicio.toLocaleDateString('es-ES')}</span>
         </div>
 
-        {/* Hora */}
         <div className="flex items-center gap-2 text-text">
           <FiClock size={16} className="text-muted" />
           <span>
-            {reservation.startTime} - {reservation.endTime}
+            {fechaInicio.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })} - {fechaFin.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
           </span>
-        </div>
-
-        {/* Asistentes */}
-        <div className="flex items-center gap-2 text-text">
-          <FiUsers size={16} className="text-muted" />
-          <span>{reservation.attendeeCount} personas</span>
         </div>
       </div>
 
-      {/* Motivo de rechazo (si aplica) */}
-      {reservation.status === ReservationStatus.REJECTED && reservation.rejectionReason && (
+      {reservation.estado === 'Rechazada' && reservation.comentarioStaff && (
         <div className="bg-danger-50 border border-danger-200 rounded-card p-2 mb-4">
-          <p className="text-xs text-danger-700 m-0">
-            <strong>Motivo:</strong> {reservation.rejectionReason}
+          <p className="text-xs text-danger-700 m-0 flex items-center gap-1">
+            <FiMessageSquare size={12} />
+            <strong>Motivo:</strong> {reservation.comentarioStaff}
           </p>
         </div>
       )}

@@ -1,4 +1,4 @@
-import { useState, useContext } from 'react';
+import { useState, useContext, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { useAppStore } from '../context/AppStoreContext';
@@ -26,7 +26,7 @@ export default function SpaceDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { currentUser } = useContext(AuthContext);
-  const { spaces, reservations } = useAppStore();
+  const { salas, reservas, cargarReservas } = useAppStore();
 
   const [showForm, setShowForm] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<{
@@ -39,7 +39,11 @@ export default function SpaceDetailPage() {
     requiresApproval: false,
   });
 
-  const space = spaces.find((s) => s.id === Number(id));
+  useEffect(() => {
+    cargarReservas();
+  }, [cargarReservas]);
+
+  const space = salas.find((s: any) => s.id === Number(id));
 
   if (!space) {
     return (
@@ -53,12 +57,12 @@ export default function SpaceDetailPage() {
     );
   }
 
-  const spaceReservations = reservations.filter((r) => r.spaceId === space.id);
+  const spaceReservations = reservas.filter((r) => r.salaId === space.id);
 
   const handleReservationSuccess = (_reservation: Reservation) => {
     setShowForm(false);
     setSelectedSlot(null);
-    setSuccessModal({ open: true, requiresApproval: space.requiresApproval });
+    setSuccessModal({ open: true, requiresApproval: (space as any).requiereAprobacion });
   };
 
   return (
@@ -74,17 +78,17 @@ export default function SpaceDetailPage() {
 
       <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-text mb-1">{space.name}</h1>
+          <h1 className="text-3xl font-bold text-text mb-1">{space.nombre}</h1>
           <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="primary">{typeLabels[space.type]}</Badge>
-            {space.requiresApproval && (
+            <Badge variant="primary">{space.tipo}</Badge>
+            {space.requiereAprobacion && (
               <Badge variant="warning">Requiere aprobacion</Badge>
             )}
-            {!space.isActive && <Badge variant="danger">No disponible</Badge>}
+            {!(space as any).disponible && <Badge variant="danger">No disponible</Badge>}
           </div>
         </div>
 
-        {currentUser && space.isActive && !showForm && (
+        {currentUser && (space as any).disponible && !showForm && (
           <Button
             variant="primary"
             onClick={() => {
@@ -92,7 +96,7 @@ export default function SpaceDetailPage() {
               setShowForm(true);
             }}
             className="shrink-0 cursor-pointer"
-            aria-label={`Reservar ${space.name}`}
+            aria-label={`Reservar ${space.nombre}`}
           >
             <FiCalendar aria-hidden="true" /> Reservar este espacio
           </Button>
@@ -106,35 +110,35 @@ export default function SpaceDetailPage() {
             <ul className="space-y-3 text-sm">
               <li className="flex items-center gap-2 text-muted">
                 <FiMapPin aria-hidden="true" className="shrink-0" />
-                <span><strong className="text-text">Edificio:</strong> {space.building}</span>
+                <span><strong className="text-text">Edificio:</strong> {(space as any).ubicacion}</span>
               </li>
               <li className="flex items-center gap-2 text-muted">
                 <FiUsers aria-hidden="true" className="shrink-0" />
-                <span><strong className="text-text">Capacidad:</strong> {space.capacity} personas</span>
+                <span><strong className="text-text">Capacidad:</strong> {(space as any).capacidad} personas</span>
               </li>
               <li className="flex items-center gap-2 text-muted">
                 <FiCheckSquare aria-hidden="true" className="shrink-0" />
-                <span><strong className="text-text">Tipo:</strong> {typeLabels[space.type]}</span>
+                <span><strong className="text-text">Tipo:</strong> {space.tipo}</span>
               </li>
             </ul>
           </Card>
 
-          {space.resources.length > 0 && (
+          {(space as any).resources?.length > 0 && (
             <Card>
               <h2 className="text-lg font-semibold text-text mb-3">Recursos disponibles</h2>
               <div className="flex flex-wrap gap-2">
-                {space.resources.map((r) => (
+                {(space as any).resources?.map((r: string) => (
                   <Badge key={r} variant="info">{r}</Badge>
                 ))}
               </div>
             </Card>
           )}
 
-          {space.allowedPrograms.length > 0 && (
+          {(space as any).allowedPrograms?.length > 0 && (
             <Card>
               <h2 className="text-lg font-semibold text-text mb-3">Programas autorizados</h2>
               <div className="flex flex-wrap gap-2">
-                {space.allowedPrograms.map((p) => (
+                {(space as any).allowedPrograms?.map((p: string) => (
                   <Badge key={p} variant="success">{p}</Badge>
                 ))}
               </div>
@@ -145,7 +149,7 @@ export default function SpaceDetailPage() {
         <div className="lg:col-span-2">
           {showForm ? (
             <ReservationForm
-              space={space}
+              space={space as any}
               initialSlot={selectedSlot}
               onSuccess={handleReservationSuccess}
               onCancel={() => {
@@ -157,8 +161,8 @@ export default function SpaceDetailPage() {
             <div>
               <h2 className="text-xl font-semibold text-text mb-3">Disponibilidad semanal</h2>
               <WeekCalendar
-                space={space}
-                reservations={spaceReservations}
+                space={space as any}
+                reservations={reservas}
                 onSlotClick={(date, startTime, endTime) => {
                   setSelectedSlot({ date, startTime, endTime });
                   setShowForm(true);

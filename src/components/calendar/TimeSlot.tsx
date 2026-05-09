@@ -1,11 +1,8 @@
-import type { Reservation } from '../../types';
-
 interface TimeSlotProps {
-  reservations: Reservation[];
+  reservations: any[];
 }
 
 export default function TimeSlot({ reservations }: TimeSlotProps) {
-  // Si no hay reservas, no bloqueamos el color de la celda
   if (reservations.length === 0) return null;
 
   return (

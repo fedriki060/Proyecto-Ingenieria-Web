@@ -19,7 +19,7 @@ export default function HomePage() {
     );
   }
 
-  const isAdmin = currentUser.role === "ADMIN";
+  const isAdmin = currentUser.rol === "Admin";
 
   const cards = [
     {
@@ -62,7 +62,7 @@ export default function HomePage() {
           🏛️ Bienvenido a SalaFinder
         </h1>
         <p className="text-muted">
-          Hola {currentUser.name} ({currentUser.role})
+          Hola {currentUser.nombre} ({currentUser.rol})
         </p>
       </div>
 

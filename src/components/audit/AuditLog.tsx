@@ -1,28 +1,22 @@
-import type { AuditLog, User } from '../../types';
-import { AuditAction } from '../../types';
 import Badge from '../ui/Badge';
 
 type Props = {
-  logs: AuditLog[];
-  users?: User[];
+  logs: any[];
+  users?: any[];
 };
 
-const actionConfig: Record<AuditAction, { label: string; variant: 'success' | 'danger' | 'warning' | 'info' | 'primary' }> = {
-  [AuditAction.RESERVATION_CREATED]:   { label: 'Reserva creada',    variant: 'primary'  },
-  [AuditAction.RESERVATION_APPROVED]:  { label: 'Reserva aprobada',  variant: 'success'  },
-  [AuditAction.RESERVATION_REJECTED]:  { label: 'Reserva rechazada', variant: 'danger'   },
-  [AuditAction.RESERVATION_CANCELLED]: { label: 'Reserva cancelada', variant: 'warning'  },
-  [AuditAction.SPACE_CREATED]:         { label: 'Espacio creado',    variant: 'info'     },
-  [AuditAction.SPACE_UPDATED]:         { label: 'Espacio editado',   variant: 'info'     },
-  [AuditAction.SPACE_DELETED]:         { label: 'Espacio eliminado', variant: 'danger'   },
-  [AuditAction.USER_BLOCKED]:          { label: 'Usuario bloqueado', variant: 'danger'   },
-  [AuditAction.USER_UNBLOCKED]:        { label: 'Usuario desbloqueado', variant: 'success' },
+const actionConfig: Record<string, { label: string; variant: 'success' | 'danger' | 'warning' | 'info' | 'primary' }> = {
+  'CREAR':     { label: 'Creado',     variant: 'primary' },
+  'APROBADA':  { label: 'Aprobado',   variant: 'success' },
+  'RECHAZADA': { label: 'Rechazado',  variant: 'danger'  },
+  'CANCELAR':  { label: 'Cancelado',  variant: 'warning' },
+  'NO-SHOW':   { label: 'No-Show',    variant: 'danger'  },
+  'BLOQUEO':   { label: 'Bloqueado',  variant: 'danger'  },
+  'ACTUALIZAR':{ label: 'Actualizado',variant: 'info'    },
+  'ELIMINAR':  { label: 'Eliminado',  variant: 'danger'  },
 };
 
-export default function AuditLogComponent({ logs, users = [] }: Props) {
-  const getUserName = (userId: number) =>
-    users.find((u) => u.id === userId)?.name ?? `Usuario #${userId}`;
-
+export default function AuditLogComponent({ logs }: Props) {
   if (logs.length === 0) {
     return (
       <div className="rounded-card border border-border bg-surface p-8 text-center text-muted">
@@ -40,30 +34,34 @@ export default function AuditLogComponent({ logs, users = [] }: Props) {
               <th scope="col" className="text-left px-4 py-3 text-xs font-semibold text-muted uppercase">Usuario</th>
               <th scope="col" className="text-left px-4 py-3 text-xs font-semibold text-muted uppercase">Accion</th>
               <th scope="col" className="text-left px-4 py-3 text-xs font-semibold text-muted uppercase hidden md:table-cell">Entidad</th>
+              <th scope="col" className="text-left px-4 py-3 text-xs font-semibold text-muted uppercase hidden md:table-cell">Detalle</th>
               <th scope="col" className="text-left px-4 py-3 text-xs font-semibold text-muted uppercase">Fecha y hora</th>
             </tr>
           </thead>
           <tbody>
-            {logs.map((log, idx) => {
-              const config = actionConfig[log.action];
+            {logs.map((log: any, idx: number) => {
+              const config = actionConfig[log.accion?.toUpperCase()];
               return (
                 <tr
                   key={`${log.id}-${idx}`}
                   className="border-b border-border hover:bg-page transition-colors"
                 >
                   <td className="px-4 py-3 text-sm text-text font-medium">
-                    {getUserName(log.userId)}
+                    {log.usuarioId?.substring(0, 8) ?? 'Sistema'}
                   </td>
                   <td className="px-4 py-3">
                     <Badge variant={config?.variant ?? 'primary'} className="text-xs">
-                      {config?.label ?? log.action}
+                      {config?.label ?? log.accion}
                     </Badge>
                   </td>
                   <td className="px-4 py-3 text-sm text-muted hidden md:table-cell">
-                    {log.entityType} #{log.entityId}
+                    {log.entidad}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-muted hidden md:table-cell">
+                    {log.detalle}
                   </td>
                   <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">
-                    {new Date(log.timestamp).toLocaleString('es-ES', {
+                    {new Date(log.fecha).toLocaleString('es-ES', {
                       day: '2-digit',
                       month: '2-digit',
                       year: 'numeric',

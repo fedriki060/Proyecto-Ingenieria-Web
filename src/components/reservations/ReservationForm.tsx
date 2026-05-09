@@ -1,25 +1,21 @@
-import React, { useState, useContext, useMemo } from 'react';
-import type { Space, Reservation } from '../../types';
+import React, { useState, useContext } from 'react';
 import { AuthContext } from '../../context/AuthContext';
 import { useAppStore } from '../../context/AppStoreContext';
 import { useToast } from '../../context/ToastContext';
-import { detectConflicts } from '../../services/conflictService';
-import { UserRole } from '../../types';
 import Button from '../ui/Button';
 import Card from '../ui/Card';
-import ConflictAlert from './ConflictAlert';
 import { FiCalendar, FiClock, FiUsers, FiFileText } from 'react-icons/fi';
 
 interface ReservationFormProps {
-  space: Space;
+  space: any;
   initialSlot?: { date: string; startTime: string; endTime: string } | null;
-  onSuccess?: (reservation: Reservation) => void;
+  onSuccess?: (reservation: any) => void;
   onCancel?: () => void;
 }
 
 export default function ReservationForm({ space, initialSlot, onSuccess, onCancel }: ReservationFormProps) {
   const { currentUser } = useContext(AuthContext);
-  const { reservations, createReservation } = useAppStore();
+  const { crearReserva } = useAppStore();
   const { showToast } = useToast();
 
   const [formData, setFormData] = useState({
@@ -34,16 +30,6 @@ export default function ReservationForm({ space, initialSlot, onSuccess, onCance
 
   if (!currentUser) return null;
 
-  const isNotAuthorized =
-    space.allowedPrograms?.length > 0 &&
-    currentUser.role === UserRole.STUDENT &&
-    (!currentUser.program || !space.allowedPrograms.includes(currentUser.program));
-
-  const conflict = useMemo(() => {
-    if (!formData.date || !formData.startTime || !formData.endTime) return null;
-    return detectConflicts(space.id, formData.date, formData.startTime, formData.endTime, reservations);
-  }, [formData.date, formData.startTime, formData.endTime, space.id, reservations]);
-
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -57,51 +43,40 @@ export default function ReservationForm({ space, initialSlot, onSuccess, onCance
     e.preventDefault();
     setError(null);
 
-    if (currentUser.isBlocked) {
-      setError('Estas bloqueado y no puedes hacer reservas.');
-      return;
-    }
-    if (formData.attendeeCount > space.capacity) {
-      setError(`Numero de asistentes (${formData.attendeeCount}) excede capacidad (${space.capacity})`);
+    if (formData.attendeeCount > space.capacidad) {
+      setError(`Número de asistentes (${formData.attendeeCount}) excede capacidad (${space.capacidad})`);
       return;
     }
     if (!formData.purpose.trim()) {
-      setError('Debes especificar el proposito de la reserva');
+      setError('Debes especificar el propósito de la reserva');
       return;
     }
-    if (conflict?.hasConflict) {
-      setError('Hay un conflicto de horario. Por favor selecciona otro slot.');
-      return;
-    }
-    if (isNotAuthorized) {
-      setError(`Tu programa (${currentUser.program ?? 'sin programa'}) no esta autorizado para este espacio.`);
+    if (formData.startTime >= formData.endTime) {
+      setError('La hora de fin debe ser posterior a la de inicio');
       return;
     }
 
     setIsSubmitting(true);
     try {
-      const reservation = await createReservation(
-        {
-          spaceId: space.id,
-          date: formData.date,
-          startTime: formData.startTime,
-          endTime: formData.endTime,
-          purpose: formData.purpose,
-          attendeeCount: formData.attendeeCount,
-        },
-        currentUser.id,
-        space
+      const fechaInicio = `${formData.date}T${formData.startTime}:00`;
+      const fechaFin = `${formData.date}T${formData.endTime}:00`;
+
+      const reservation = await crearReserva(
+        space.id,
+        fechaInicio,
+        fechaFin,
+        formData.purpose
       );
       showToast(
-        space.requiresApproval
-          ? 'Reserva enviada — pendiente de aprobacion'
+        space.requiereAprobacion
+          ? 'Reserva enviada — pendiente de aprobación'
           : 'Reserva creada y aprobada',
-        space.requiresApproval ? 'warning' : 'success'
+        space.requiereAprobacion ? 'warning' : 'success'
       );
       onSuccess?.(reservation);
-    } catch {
-      showToast('Error al crear la reserva', 'error');
-      setError('Error al crear la reserva. Intenta de nuevo.');
+    } catch (err: any) {
+      showToast(err.message || 'Error al crear la reserva', 'error');
+      setError(err.message || 'Error al crear la reserva. Intenta de nuevo.');
     } finally {
       setIsSubmitting(false);
     }
@@ -110,24 +85,13 @@ export default function ReservationForm({ space, initialSlot, onSuccess, onCance
   return (
     <Card className="w-full max-w-2xl">
       <h2 className="text-xl font-semibold text-text mb-4">
-        Nueva Reserva — {space.name}
+        Nueva Reserva — {space.nombre}
       </h2>
 
-      {space.requiresApproval && (
+      {space.requiereAprobacion && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-card p-3 mb-4" role="note">
           <p className="text-sm text-yellow-800">
-            Esta reserva requiere aprobacion del administrador
-          </p>
-        </div>
-      )}
-
-      {isNotAuthorized && (
-        <div className="bg-red-50 border border-red-200 rounded-card p-3 mb-4" role="alert">
-          <p className="text-sm text-red-800 font-semibold">
-            Tu programa ({currentUser.program ?? 'sin programa'}) no esta autorizado para reservar este espacio.
-          </p>
-          <p className="text-xs text-red-700 mt-1">
-            Programas autorizados: {space.allowedPrograms.join(', ')}
+            Esta reserva requiere aprobación del administrador
           </p>
         </div>
       )}
@@ -195,19 +159,18 @@ export default function ReservationForm({ space, initialSlot, onSuccess, onCance
               value={formData.attendeeCount}
               onChange={handleChange}
               min={1}
-              max={space.capacity}
+              max={space.capacidad}
               required
-              aria-describedby="capacity-hint"
               className="w-full px-3 py-2 rounded-input border border-border bg-surface text-text focus:ring-2 focus:ring-brand-300 outline-none"
             />
-            <p id="capacity-hint" className="text-xs text-muted mt-1">
-              Capacidad maxima: {space.capacity}
+            <p className="text-xs text-muted mt-1">
+              Capacidad máxima: {space.capacidad}
             </p>
           </div>
           <div>
             <label htmlFor="res-purpose" className="block text-sm font-semibold text-text mb-2">
               <FiFileText className="inline mr-1" aria-hidden="true" />
-              Proposito
+              Propósito
             </label>
             <input
               id="res-purpose"
@@ -222,15 +185,6 @@ export default function ReservationForm({ space, initialSlot, onSuccess, onCance
           </div>
         </div>
 
-        {conflict?.hasConflict && (
-          <ConflictAlert
-            conflict={conflict}
-            onSelectSlot={(startTime, endTime) =>
-              setFormData((prev) => ({ ...prev, startTime, endTime }))
-            }
-          />
-        )}
-
         {error && (
           <div className="bg-red-50 border border-red-200 rounded-card p-3" role="alert">
             <p className="text-sm text-red-800">{error}</p>
@@ -239,9 +193,9 @@ export default function ReservationForm({ space, initialSlot, onSuccess, onCance
 
         <div className="bg-page rounded-card p-3 space-y-1 text-xs text-muted">
           <p className="font-semibold text-text text-sm">Resumen</p>
-          <p>{space.name} — {formData.date}</p>
+          <p>{space.nombre} — {formData.date}</p>
           <p>{formData.startTime} a {formData.endTime} | {formData.attendeeCount} asistentes</p>
-          <p>{formData.purpose || 'Sin proposito indicado'}</p>
+          <p>{formData.purpose || 'Sin propósito indicado'}</p>
         </div>
 
         <div className="flex gap-3 justify-end pt-4 border-t border-border">
@@ -258,7 +212,7 @@ export default function ReservationForm({ space, initialSlot, onSuccess, onCance
             type="submit"
             variant="primary"
             isLoading={isSubmitting}
-            disabled={!!conflict?.hasConflict || isSubmitting || isNotAuthorized}
+            disabled={isSubmitting}
             className="cursor-pointer"
           >
             Crear reserva

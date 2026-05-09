@@ -33,7 +33,7 @@ export default function Navbar() {
     { to: '/', label: 'Inicio', icon: <FiHome aria-hidden="true" /> },
     { to: '/spaces', label: 'Espacios', icon: <FiCalendar aria-hidden="true" /> },
     { to: '/reservations', label: 'Mis reservas', icon: <FiClipboard aria-hidden="true" /> },
-    ...(currentUser.role === UserRole.ADMIN
+    ...(currentUser.rol === 'Admin'
       ? [{ to: '/admin', label: 'Admin', icon: <FiClipboard aria-hidden="true" /> }]
       : []),
   ];
@@ -82,8 +82,8 @@ export default function Navbar() {
 
             <div className="hidden md:flex items-center gap-3">
               <div className="text-sm text-right">
-                <p className="font-semibold leading-tight">{currentUser.name}</p>
-                <p className="text-xs opacity-75">{currentUser.role}</p>
+                <p className="font-semibold leading-tight">{currentUser.nombre}</p>
+                <p className="text-xs opacity-75">{currentUser.rol}</p>
               </div>
               <button
                 onClick={() => { logout(); navigate('/login'); }}
@@ -127,8 +127,8 @@ export default function Navbar() {
             ))}
             <div className="pt-2 border-t border-brand-600 flex items-center justify-between">
               <div className="text-sm">
-                <p className="font-semibold">{currentUser.name}</p>
-                <p className="text-xs opacity-75">{currentUser.role}</p>
+                <p className="font-semibold">{currentUser.nombre}</p>
+                <p className="text-xs opacity-75">{currentUser.rol}</p>
               </div>
               <button
                 onClick={() => { logout(); navigate('/login'); }}

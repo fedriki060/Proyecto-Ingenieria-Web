@@ -1,4 +1,4 @@
-import { useContext, useState } from 'react';
+import { useContext, useState, useEffect } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { useAppStore } from '../context/AppStoreContext';
 import { useToast } from '../context/ToastContext';
@@ -6,12 +6,11 @@ import StateMessage from '../components/ui/StateMessage';
 import ReservationCard from '../components/reservations/ReservationCard';
 import Modal from '../components/ui/Modal';
 import Button from '../components/ui/Button';
-import { ReservationStatus } from '../types';
 import { FiLoader } from 'react-icons/fi';
 
 export default function ReservationsPage() {
   const { currentUser } = useContext(AuthContext);
-  const { getReservationsByUser, cancelReservation, spaces, isLoading } = useAppStore();
+  const { reservas, salas, cancelarReserva, cargarReservas, isLoading } = useAppStore();
   const { showToast } = useToast();
 
   const [cancelModal, setCancelModal] = useState<{ open: boolean; reservationId: number | null }>({
@@ -19,6 +18,10 @@ export default function ReservationsPage() {
     reservationId: null,
   });
   const [cancelling, setCancelling] = useState(false);
+
+  useEffect(() => {
+    cargarReservas();
+  }, [cargarReservas]);
 
   if (!currentUser) {
     return (
@@ -30,9 +33,7 @@ export default function ReservationsPage() {
     );
   }
 
-  const userReservations = getReservationsByUser(currentUser.id);
-
-  if (userReservations.length === 0) {
+  if (reservas.length === 0 && !isLoading) {
     return (
       <div className="mx-auto max-w-6xl px-6 py-10">
         <h1 className="text-3xl font-bold text-text mb-6">Mis Reservas</h1>
@@ -48,14 +49,14 @@ export default function ReservationsPage() {
   }
 
   const groups = [
-    { status: ReservationStatus.APPROVED, label: 'Aprobadas' },
-    { status: ReservationStatus.PENDING, label: 'Pendientes de aprobacion' },
-    { status: ReservationStatus.REJECTED, label: 'Rechazadas' },
-    { status: ReservationStatus.CANCELLED, label: 'Canceladas' },
+    { estado: 'Aprobada', label: 'Aprobadas' },
+    { estado: 'Pendiente', label: 'Pendientes de aprobacion' },
+    { estado: 'Rechazada', label: 'Rechazadas' },
+    { estado: 'Cancelada', label: 'Canceladas' },
   ];
 
-  const canCancel = (status: ReservationStatus) =>
-    status === ReservationStatus.PENDING || status === ReservationStatus.APPROVED;
+  const canCancel = (estado: string) =>
+    estado === 'Pendiente' || estado === 'Aprobada';
 
   const handleCancelClick = (reservationId: number) => {
     setCancelModal({ open: true, reservationId });
@@ -65,7 +66,7 @@ export default function ReservationsPage() {
     if (!cancelModal.reservationId) return;
     setCancelling(true);
     try {
-      await cancelReservation(cancelModal.reservationId, currentUser.id);
+      await cancelarReserva(cancelModal.reservationId);
       showToast('Reserva cancelada correctamente', 'info');
     } catch {
       showToast('Error al cancelar la reserva', 'error');
@@ -86,23 +87,23 @@ export default function ReservationsPage() {
         )}
       </div>
 
-      {groups.map(({ status, label }) => {
-        const group = userReservations.filter((r) => r.status === status);
+      {groups.map(({ estado, label }) => {
+        const group = reservas.filter((r: any) => r.estado === estado);
         if (group.length === 0) return null;
         return (
-          <section key={status} className="mb-8" aria-labelledby={`group-${status}`}>
-            <h2 id={`group-${status}`} className="text-xl font-semibold text-text mb-4">
+          <section key={estado} className="mb-8" aria-labelledby={`group-${estado}`}>
+            <h2 id={`group-${estado}`} className="text-xl font-semibold text-text mb-4">
               {label} ({group.length})
             </h2>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {group.map((res) => {
-                const space = spaces.find((s) => s.id === res.spaceId);
+              {group.map((res: any) => {
+                const space = salas.find((s: any) => s.id === res.salaId);
                 return (
                   <ReservationCard
                     key={res.id}
                     reservation={res}
-                    space={space}
-                    onCancel={canCancel(res.status) ? () => handleCancelClick(res.id) : undefined}
+                    space={space as any}
+                    onCancel={canCancel(res.estado) ? () => handleCancelClick(res.id) : undefined}
                   />
                 );
               })}

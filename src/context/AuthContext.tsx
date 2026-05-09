@@ -1,23 +1,36 @@
-import { createContext, useState, useEffect, type ReactNode } from 'react';
-import type { User } from '../types';
-import { seedUsers } from '../data/seed';
+import { createContext, useState, useEffect, useContext, type ReactNode } from 'react';
+import { authApi } from '../services/api';
+
+interface CurrentUser {
+  userId: string;
+  email: string;
+  nombre: string;
+  rol: string;
+  token: string;
+}
 
 interface AuthContextType {
-  currentUser: User | null;
+  currentUser: CurrentUser | null;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => boolean;
+  login: (email: string, password: string) => Promise<boolean>;
+  loginWithData: (user: CurrentUser) => void;
   logout: () => void;
 }
 
 export const AuthContext = createContext<AuthContextType>({
   currentUser: null,
   isAuthenticated: false,
-  login: () => false,
+  login: async () => false,
+  loginWithData: () => {},
   logout: () => {},
 });
 
+export function useAuth() {
+  return useContext(AuthContext);
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
 
   useEffect(() => {
     const stored = localStorage.getItem('currentUser');
@@ -30,14 +43,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const login = (email: string, _password: string) => {
-    const user = seedUsers.find((u) => u.email === email);
-    if (user) {
+  const login = async (email: string, password: string): Promise<boolean> => {
+    try {
+      const result = await authApi.login(email, password);
+      const user: CurrentUser = {
+        userId: '',
+        email: result.email,
+        nombre: result.nombreCompleto,
+        rol: result.rol,
+        token: result.token,
+      };
       setCurrentUser(user);
       localStorage.setItem('currentUser', JSON.stringify(user));
       return true;
+    } catch {
+      return false;
     }
-    return false;
+  };
+
+  const loginWithData = (user: CurrentUser) => {
+    setCurrentUser(user);
+    localStorage.setItem('currentUser', JSON.stringify(user));
   };
 
   const logout = () => {
@@ -45,10 +71,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem('currentUser');
   };
 
-  const isAuthenticated = currentUser !== null;
-
   return (
-    <AuthContext.Provider value={{ currentUser, isAuthenticated, login, logout }}>
+    <AuthContext.Provider value={{
+      currentUser,
+      isAuthenticated: currentUser !== null,
+      login,
+      loginWithData,
+      logout,
+    }}>
       {children}
     </AuthContext.Provider>
   );

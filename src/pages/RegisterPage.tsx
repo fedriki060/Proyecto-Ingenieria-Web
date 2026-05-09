@@ -6,6 +6,8 @@ import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import { UserRole } from '../types';
 import { FiUserPlus } from 'react-icons/fi';
+import { authApi } from '../services/api';
+
 
 interface FormState {
   name: string;
@@ -15,11 +17,10 @@ interface FormState {
   role: UserRole;
   program: string;
 }
-
 const PROGRAMS = ['Ingenieria', 'Administracion', 'TI', 'Tecnologia', 'Otro'];
 
 export default function RegisterPage() {
-  const { currentUser, login } = useContext(AuthContext);
+  const { currentUser, login, loginWithData } = useContext(AuthContext);
   const { showToast } = useToast();
   const navigate = useNavigate();
 
@@ -71,18 +72,22 @@ export default function RegisterPage() {
         form.role === UserRole.STUDENT ? 'Estudiante' : 'Staff'
       );
       if (result.token) {
-        const success = await login(form.email, form.password);
-        if (success) {
-          showToast(`Bienvenido, ${form.name}!`, 'success');
-          navigate('/');
-        }
+        loginWithData({
+          userId: '',
+          email: result.email,
+          nombre: result.nombreCompleto,
+          rol: result.rol,
+          token: result.token,
+        });
+        showToast(`Bienvenido, ${form.name}!`, 'success');
+        navigate('/');
       }
-    } catch (error: any) {
-      showToast(error.message || 'Error al registrar usuario', 'error');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+          } catch (error: any) {
+            showToast(error.message || 'Error al registrar usuario', 'error');
+          } finally {
+            setIsSubmitting(false);
+          }
+        };
 
   return (
     <main className="mx-auto max-w-md px-6 py-10">

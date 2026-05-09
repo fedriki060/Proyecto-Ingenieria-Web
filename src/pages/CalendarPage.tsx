@@ -9,11 +9,11 @@ import Button from '../components/ui/Button';
 
 export default function CalendarPage() {
   const { currentUser } = useContext(AuthContext);
-  const { spaces, reservations } = useAppStore();
+  const { salas, reservas } = useAppStore();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
-  const spaceId = Number(searchParams.get('spaceId')) || spaces[0]?.id;
+  const spaceId = Number(searchParams.get('spaceId')) || salas[0]?.id;
 
   const [selectedSlot, setSelectedSlot] = useState<{
     date: string;
@@ -24,7 +24,7 @@ export default function CalendarPage() {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [_showSuccessModal, _setShowSuccessModal] = useState(false);
 
-  const space = spaces.find((s) => s.id === spaceId);
+  const space = salas.find((s: any) => s.id === spaceId);
 
   if (!currentUser) {
     return (
@@ -64,7 +64,7 @@ export default function CalendarPage() {
     setSelectedSlot(null);
   };
 
-  const spaceReservations = reservations.filter((r) => r.spaceId === space.id);
+  const spaceReservations = reservas.filter((r: any) => r.salaId === space?.id);
 
   return (
     <div className="flex-auto min-h-[calc(100vh-60px)]">
@@ -78,15 +78,15 @@ export default function CalendarPage() {
           </button>
 
           <div className="mb-6">
-            <h1 className="text-2xl font-bold text-text mb-1">{space.name}</h1>
+            <h1 className="text-2xl font-bold text-text mb-1">{space.nombre}</h1>
             <p className="text-muted">
-              {space.building} | Capacidad: {space.capacity}
+              {(space as any).ubicacion} | Capacidad: {space.capacidad}
             </p>
           </div>
 
           <WeekCalendar
-            space={space}
-            reservations={spaceReservations}
+            space={space as any}
+            reservations={spaceReservations as any}
             onSlotClick={handleSlotClick}
           />
         </div>

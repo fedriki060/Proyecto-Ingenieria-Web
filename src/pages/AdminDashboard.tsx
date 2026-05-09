@@ -1,4 +1,4 @@
-import { useContext, useState } from 'react';
+import { useContext, useState, useEffect } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { useAppStore } from '../context/AppStoreContext';
 import { useToast } from '../context/ToastContext';
@@ -10,11 +10,11 @@ import Badge from '../components/ui/Badge';
 import Modal from '../components/ui/Modal';
 import { UserRole, ReservationStatus } from '../types';
 import { FiUsers, FiCalendar, FiCheckCircle, FiAlertCircle, FiCheck, FiX } from 'react-icons/fi';
+import { auditApi } from '../services/api';
 
 export default function AdminDashboard() {
   const { currentUser } = useContext(AuthContext);
-  const { reservations, spaces, users, auditLogs, approveReservation, rejectReservation, isLoading } =
-    useAppStore();
+  const { todasReservas, salas, isLoading, cambiarEstadoReserva, cargarTodasReservas } = useAppStore();
   const { showToast } = useToast();
 
   const [rejectModal, setRejectModal] = useState<{ open: boolean; reservationId: number | null }>({
@@ -23,8 +23,23 @@ export default function AdminDashboard() {
   });
   const [rejectionReason, setRejectionReason] = useState('');
   const [actionLoading, setActionLoading] = useState<number | null>(null);
+  const [auditLogs, setAuditLogs] = useState<any[]>([]);
 
-  if (!currentUser || currentUser.role !== UserRole.ADMIN) {
+  const cargarAudit = async () => {
+    try {
+      const data = await auditApi.getAll();
+      setAuditLogs(data);
+    } catch {
+      console.error('Error cargando auditoría');
+    }
+  };
+
+  useEffect(() => {
+    cargarTodasReservas();
+    cargarAudit();
+  }, [cargarTodasReservas]);
+
+  if (!currentUser || currentUser.rol !== "Admin") {
     return (
       <StateMessage
         type="error"
@@ -36,14 +51,16 @@ export default function AdminDashboard() {
     );
   }
 
-  const pending = reservations.filter((r) => r.status === ReservationStatus.PENDING);
-  const approved = reservations.filter((r) => r.status === ReservationStatus.APPROVED);
-  const blockedUsers = users.filter((u) => u.isBlocked);
-
+  const pending = todasReservas.filter((r: any) => r.estado === 'Pendiente');
+  const approved = todasReservas.filter((r: any) => r.estado === 'Aprobada');
+  //const blockedUsers = users.filter((u) => u.isBlocked);
+  const blockedUsers: any[] = [];
   const handleApprove = async (reservationId: number) => {
     setActionLoading(reservationId);
     try {
-      await approveReservation({ reservationId, approvedBy: currentUser.id });
+      await cambiarEstadoReserva(reservationId, 'Aprobada');
+      await cargarTodasReservas();
+      await cargarAudit();
       showToast('Reserva aprobada correctamente', 'success');
     } catch {
       showToast('Error al aprobar la reserva', 'error');
@@ -62,11 +79,9 @@ export default function AdminDashboard() {
     setActionLoading(rejectModal.reservationId);
     setRejectModal({ open: false, reservationId: null });
     try {
-      await rejectReservation({
-        reservationId: rejectModal.reservationId,
-        rejectionReason,
-        rejectedBy: currentUser.id,
-      });
+      await cambiarEstadoReserva(rejectModal.reservationId, 'Rechazada', rejectionReason);
+      await cargarTodasReservas();
+      await cargarAudit();
       showToast('Reserva rechazada', 'warning');
     } catch {
       showToast('Error al rechazar la reserva', 'error');
@@ -89,7 +104,7 @@ export default function AdminDashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs font-semibold text-muted uppercase">Usuarios</p>
-                <p className="text-2xl font-bold text-text mt-1">{users.length}</p>
+                <p className="text-2xl font-bold text-text mt-1">{0}</p>
               </div>
               <FiUsers className="w-8 h-8 text-brand-600 opacity-20" />
             </div>
@@ -116,7 +131,7 @@ export default function AdminDashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs font-semibold text-muted uppercase">Reservas</p>
-                <p className="text-2xl font-bold text-text mt-1">{reservations.length}</p>
+                <p className="text-2xl font-bold text-text mt-1">{todasReservas.length}</p>
               </div>
               <FiCalendar className="w-8 h-8 text-brand-600 opacity-20" />
             </div>
@@ -145,8 +160,8 @@ export default function AdminDashboard() {
           ) : (
             <div className="space-y-3">
               {pending.map((res) => {
-                const space = spaces.find((s) => s.id === res.spaceId);
-                const user = users.find((u) => u.id === res.userId);
+                const space = salas.find((s: any) => s.id === res.salaId);
+                const user = { name: res.nombreUsuario, program: '' };
                 const loading = actionLoading === res.id;
                 return (
                   <Card key={res.id}>
@@ -154,18 +169,17 @@ export default function AdminDashboard() {
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1 flex-wrap">
                           <h3 className="font-semibold text-text">
-                            {space?.name ?? `Espacio ${res.spaceId}`}
+                            {space?.nombre ?? `Espacio ${res.salaId}`}
                           </h3>
                           <Badge variant="warning">Pendiente</Badge>
-                        </div>
-                        <p className="text-sm text-muted">
-                          Usuario: {user?.name ?? `#${res.userId}`} — {user?.program}
-                        </p>
-                        <p className="text-sm text-muted">
-                          Fecha: {res.date} | {res.startTime}–{res.endTime}
-                        </p>
-                        <p className="text-sm text-muted">Proposito: {res.purpose}</p>
-                        <p className="text-sm text-muted">Asistentes: {res.attendeeCount}</p>
+                          </div>
+                          <p className="text-sm text-muted">
+                            Usuario: {res.nombreUsuario}
+                          </p>
+                          <p className="text-sm text-muted">
+                            Fecha: {new Date(res.fechaInicio).toLocaleDateString('es-ES')} | {new Date(res.fechaInicio).toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'})}–{new Date(res.fechaFin).toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'})}
+                          </p>
+                          <p className="text-sm text-muted">Proposito: {res.proposito}</p>
                       </div>
                       <div className="flex gap-2 shrink-0">
                         <Button
@@ -227,7 +241,7 @@ export default function AdminDashboard() {
 
         <section aria-labelledby="audit-title">
           <h2 id="audit-title" className="text-2xl font-bold text-text mb-4">Registro de Auditoria</h2>
-          <AuditLog logs={[...auditLogs].reverse().slice(0, 50)} users={users} />
+          <AuditLog logs={auditLogs} users={[]} />
         </section>
       </main>
 
