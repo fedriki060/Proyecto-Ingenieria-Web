@@ -19,7 +19,7 @@ export default function LoginPage() {
     }
   }, [currentUser, navigate]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
@@ -28,7 +28,7 @@ export default function LoginPage() {
       return;
     }
 
-    const success = login(email, password);
+    const success = await login(email, password);
     if (success) {
       navigate('/');
     } else {
